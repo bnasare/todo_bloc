@@ -7,13 +7,15 @@ import 'package:todo_bloc/presentation/todo_cubit.dart';
 class TodoPage extends StatelessWidget {
   const TodoPage({super.key});
 
-  void _showAddTodoBox(BuildContext context) {
+  void _showTodoDialog(BuildContext context, {Todo? todo}) {
     final todoCubit = context.read<TodoCubit>();
-    final todoTextController = TextEditingController();
+    final todoTextController = TextEditingController(text: todo?.text ?? '');
+    final isEditing = todo != null;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Todo'),
+        title: Text(isEditing ? 'Edit Todo' : 'Add Todo'),
         content: TextField(
           autofocus: true,
           controller: todoTextController,
@@ -26,12 +28,23 @@ class TodoPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              todoCubit.addTodo(Todo(
-                  text: todoTextController.text,
-                  id: DateTime.now().millisecondsSinceEpoch));
-              Navigator.pop(context);
+              if (todoTextController.text.isNotEmpty) {
+                if (isEditing) {
+                  todoCubit.updateTodo(Todo(
+                    id: todo.id,
+                    text: todoTextController.text,
+                    completed: todo.completed,
+                  ));
+                } else {
+                  todoCubit.addTodo(Todo(
+                    text: todoTextController.text,
+                    id: DateTime.now().millisecondsSinceEpoch,
+                  ));
+                }
+                Navigator.pop(context);
+              }
             },
-            child: const Text('Add'),
+            child: Text(isEditing ? 'Update' : 'Add'),
           ),
         ],
       ),
@@ -40,7 +53,7 @@ class TodoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final todoCubit = context.watch<TodoCubit>();
+    final todoCubit = context.read<TodoCubit>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Todo List')),
@@ -53,26 +66,39 @@ class TodoPage extends StatelessWidget {
             itemCount: todos.length,
             itemBuilder: (context, index) {
               final todo = todos[index];
-              if (todo.text.isEmpty) return const SizedBox.shrink();
               return ListTile(
-                title: Text(todo.text),
+                title: Text(todo.text,
+                    style: todo.completed
+                        ? const TextStyle(
+                            decoration: TextDecoration.lineThrough)
+                        : null),
                 leading: Checkbox(
                   value: todo.completed,
                   onChanged: (value) {
                     todoCubit.toggleCompletion(todo);
                   },
                 ),
-                trailing: IconButton(
-                  icon: const Icon(CupertinoIcons.delete),
-                  onPressed: () => todoCubit.deleteTodo(todo),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _showTodoDialog(context, todo: todo),
+                    ),
+                    IconButton(
+                      icon: const Icon(CupertinoIcons.delete),
+                      onPressed: () => todoCubit.deleteTodo(todo),
+                    ),
+                  ],
                 ),
+                onTap: () => _showTodoDialog(context, todo: todo),
               );
             },
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddTodoBox(context),
+        onPressed: () => _showTodoDialog(context),
         tooltip: 'Add Todo',
         child: const Icon(CupertinoIcons.add),
       ),

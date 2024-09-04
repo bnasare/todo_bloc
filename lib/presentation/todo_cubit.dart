@@ -1,8 +1,5 @@
-import 'dart:developer';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo_bloc/domain/model/repository/todo_repo.dart';
-
 import '../domain/model/todo.dart';
 
 class TodoCubit extends Cubit<List<Todo>> {
@@ -16,27 +13,17 @@ class TodoCubit extends Cubit<List<Todo>> {
       final todoList = await todoRepo.getTodos();
       emit(todoList);
     } catch (e) {
-      emit([]); // Emit an empty list in case of error
-      log('Error loading todos: $e');
+      emit([]);
+      print('Error loading todos: $e');
     }
   }
 
   Future<void> addTodo(Todo newTodo) async {
     try {
-      final newTodoItem = Todo(id: newTodo.id, text: newTodo.text);
-      await todoRepo.addTodo(newTodoItem);
+      await todoRepo.addTodo(newTodo);
       await loadTodos();
     } catch (e) {
-      log('Error adding todo: $e');
-    }
-  }
-
-  Future<void> deleteTodo(Todo todo) async {
-    try {
-      await todoRepo.deleteTodo(todo);
-      await loadTodos();
-    } catch (e) {
-      log('Error deleting todo: $e');
+      print('Error adding todo: $e');
     }
   }
 
@@ -45,17 +32,25 @@ class TodoCubit extends Cubit<List<Todo>> {
       await todoRepo.updateTodo(todo);
       await loadTodos();
     } catch (e) {
-      log('Error updating todo: $e');
+      print('Error updating todo: $e');
+    }
+  }
+
+  Future<void> deleteTodo(Todo todo) async {
+    try {
+      await todoRepo.deleteTodo(todo);
+      await loadTodos();
+    } catch (e) {
+      print('Error deleting todo: $e');
     }
   }
 
   Future<void> toggleCompletion(Todo todo) async {
     try {
       final newTodo = todo.toggleCompletion();
-      await todoRepo.updateTodo(newTodo);
-      await loadTodos();
+      await updateTodo(newTodo);
     } catch (e) {
-      log('Error toggling todo completion: $e');
+      print('Error toggling todo completion: $e');
     }
   }
 }
